@@ -4,11 +4,19 @@
 #--- Date           : 27th January 2018
 #----------------------------------------------
 
-import tensorflow as tf
+# import tensorflow as tf
 import csv
 import cv2
 import numpy as np
+
+from PIL import Image
+import png
+import scipy.misc
+
 from utils import visualization_utils as vis_util
+
+import tensorflow.compat.v1 as tf
+tf.disable_v2_behavior()
 
 # Variables
 total_passed_vehicle = 0  # using it to count vehicles
@@ -477,7 +485,7 @@ def targeted_object_counting(input_video, detection_graph, category_index, is_co
             cap.release()
             cv2.destroyAllWindows()
 
-def single_image_object_counting(input_video, detection_graph, category_index, is_color_recognition_enabled):     
+def single_image_object_counting(input_video, detection_graph, category_index, is_color_recognition_enabled, targeted_object):     
         total_passed_vehicle = 0
         speed = "waiting..."
         direction = "waiting..."
@@ -505,8 +513,9 @@ def single_image_object_counting(input_video, detection_graph, category_index, i
         # Expand dimensions since the model expects images to have shape: [1, None, None, 3]
         image_np_expanded = np.expand_dims(input_frame, axis=0)
 
+        with tf.Session(graph=detection_graph) as sess:
         # Actual detection.
-        (boxes, scores, classes, num) = sess.run(
+            (boxes, scores, classes, num) = sess.run(
             [detection_boxes, detection_scores, detection_classes, num_detections],
             feed_dict={image_tensor: image_np_expanded})
 
@@ -521,14 +530,18 @@ def single_image_object_counting(input_video, detection_graph, category_index, i
                                                                                               np.squeeze(classes).astype(np.int32),
                                                                                               np.squeeze(scores),
                                                                                               category_index,
+                                                                                              targeted_objects=targeted_object,
                                                                                               use_normalized_coordinates=True,
                                                                                               line_thickness=4)
+
         if(len(counting_mode) == 0):
             cv2.putText(input_frame, "...", (10, 35), font, 0.8, (0,255,255),2,cv2.FONT_HERSHEY_SIMPLEX)                       
         else:
             cv2.putText(input_frame, counting_mode, (10, 35), font, 0.8, (0,255,255),2,cv2.FONT_HERSHEY_SIMPLEX)
-        
-        cv2.imshow('tensorflow_object counting_api',input_frame)        
-        cv2.waitKey(0)
+
+        cv2.imwrite('gambar_berhasil.jpg', input_frame)
+        # cv2.imshow('tensorflow_object counting_api',input_frame)        
+        # cv2.waitKey(0)
+        # cv2.imwrite('gambaran_satu,jpg', input_frame) 
 
         return counting_mode
